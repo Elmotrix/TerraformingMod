@@ -26,11 +26,11 @@ namespace TerraformingMod
     public class AtmosphereGiveAtmospherePortionPatch
     {
         [HarmonyPrefix]
-        public static void Prefix(Atmosphere atmosphere, out GasMixture __state)
+        public static void Prefix(Atmosphere __instance, Atmosphere atmosphere, out GasMixture __state)
         {
             if (atmosphere.Mode == Atmosphere.AtmosphereMode.World)
             {
-                if (atmosphere.Room == null)
+                if (atmosphere.Room == null || __instance.Room == null)
                 {
                     __state = new GasMixture(atmosphere.GasMixture);
                     return;
@@ -39,13 +39,21 @@ namespace TerraformingMod
             __state = GasMixture.Invalid;
         }
         [HarmonyPostfix]
-        public static void Postfix(Atmosphere atmosphere, GasMixture __state)
+        public static void Postfix(Atmosphere __instance, Atmosphere atmosphere, GasMixture __state)
         {
             if (atmosphere.Mode == Atmosphere.AtmosphereMode.World)
             {
-                if (atmosphere.Room == null && TerraformingFuntions.ThisGlobalPrecise != null)
+                if ((atmosphere.Room == null || __instance.Room == null) && TerraformingFuntions.ThisGlobalPrecise != null)
                 {
                     SimpleGasMixture change = TerraformingFuntions.GasMixCompair(__state, atmosphere.GasMixture, false);
+                    if (atmosphere.Room != null)
+                    {
+                        change.Scale(0.1);
+                    }
+                    else if (__instance.Room != null)
+                    {
+                        change.Scale(-1);
+                    }
                     TerraformingFuntions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
                 }
             }
