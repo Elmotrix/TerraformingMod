@@ -1,27 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using HarmonyLib;
 using UnityEngine;
-using Assets.Scripts.Objects.Pipes;
 using Assets.Scripts.Atmospherics;
-using Assets.Scripts.Networks;
-using System.Reflection;
-using Assets.Scripts.Objects.Items;
 using static Assets.Scripts.Atmospherics.Chemistry;
-using Objects.Pipes;
-using Assets.Scripts.Objects.Electrical;
 using Assets.Scripts.Objects;
-using JetBrains.Annotations;
 using Assets.Scripts;
-using static Assets.Scripts.Atmospherics.Atmosphere;
-using Objects.SpaceShuttle;
 using Assets.Scripts.Serialization;
 
 namespace TerraformingMod
 {
+    #region BepInEx
+    [BepInEx.BepInPlugin(pluginGuid, pluginName, pluginVersion)]
+    public class TerraformingMod : BepInEx.BaseUnityPlugin
+    {
+        public const string pluginGuid = "net.elmo.stationeers.Terraforming";
+        public const string pluginName = "Terraforming Mod";
+        public const string pluginVersion = "1.0";
+        public static void Log(string line)
+        {
+            Debug.Log("[" + pluginName + "]: " + line);
+        }
+        void Awake()
+        {
+            try
+            {
+                var harmony = new Harmony(pluginGuid);
+                harmony.PatchAll();
+                Log("Patch succeeded");
+            }
+            catch (Exception e)
+            {
+                Log("Patch Failed");
+                Log(e.ToString());
+            }
+        }
+    }
+    #endregion
+
     [HarmonyPatch(typeof(Atmosphere), "GiveAtmospherePortion")]
     public class AtmosphereGiveAtmospherePortionPatch
     {
