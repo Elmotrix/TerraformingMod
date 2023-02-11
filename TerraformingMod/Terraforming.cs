@@ -65,6 +65,7 @@ namespace TerraformingMod
         [HarmonyPrefix]
         public static void Prefix()
         {
+            LightManager.SunPathTraceWorldAtmos = true;
             TerraformingFuntions.ThisGlobalPrecise = new GlobalAtmospherePrecise(WorldManager.CurrentWorldSetting.DifficultySetting.Name, Mathf.Abs(WorldManager.CurrentWorldSetting.Gravity));
             TerraformingFuntions.ThisGlobalPrecise.OnLoadMix = TerraformingFuntions.GasMixCopy(AtmosphericsController.GlobalAtmosphere.GasMixture);
             TerraformingFuntions.ThisGlobalPrecise.solarScale = WorldManager.CurrentWorldSetting.SolarScale;
