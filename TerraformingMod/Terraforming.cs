@@ -47,18 +47,6 @@ namespace TerraformingMod
             }
         }
     }
-    //[HarmonyPatch(typeof(ModularRocketActionMining), "DoActionWithGeneratedItem")]
-    //public class ModularRocketActionMiningDoActionWithGeneratedItemPatch
-    //{
-    //    [HarmonyPrefix]
-    //    public static void Prefix(DynamicThing item)
-    //    {
-    //        if (item is Stackable stackable)
-    //        {
-    //            stackable.SetQuantity(Math.Max(stackable.Quantity / 2,1));
-    //        }
-    //    }
-    //}
     [HarmonyPatch(typeof(WorldManager), "StartWorld")]
     public class WorldManagerStartWorldPatch
     {
