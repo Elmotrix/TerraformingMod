@@ -16,24 +16,24 @@ namespace TerraformingMod
         [HarmonyPrefix]
         public static void Prefix(Atmosphere __instance, Atmosphere atmosphere, out GasMixture __state)
         {
-            if (atmosphere.Mode == Atmosphere.AtmosphereMode.World)
+            if (atmosphere.Mode == AtmosphereHelper.AtmosphereMode.World)
             {
                 if (atmosphere.Room == null || __instance.Room == null)
                 {
-                    __state = new GasMixture(atmosphere.GasMixture);
+                    __state = TerraformingFunctions.GasMixCopy(atmosphere.GasMixture);
                     return;
                 }
             }
-            __state = GasMixture.Invalid;
+            __state = new GasMixture();
         }
         [HarmonyPostfix]
         public static void Postfix(Atmosphere __instance, Atmosphere atmosphere, GasMixture __state)
         {
-            if (atmosphere.Mode == Atmosphere.AtmosphereMode.World)
+            if (atmosphere.Mode == AtmosphereHelper.AtmosphereMode.World)
             {
-                if ((atmosphere.Room == null || __instance.Room == null) && TerraformingFuntions.ThisGlobalPrecise != null)
+                if ((atmosphere.Room == null || __instance.Room == null) && TerraformingFunctions.ThisGlobalPrecise != null)
                 {
-                    SimpleGasMixture change = TerraformingFuntions.GasMixCompair(__state, atmosphere.GasMixture, false);
+                    SimpleGasMixture change = TerraformingFunctions.GasMixCompair(__state, atmosphere.GasMixture, false);
                     if (atmosphere.Room != null)
                     {
                         change.Scale(0.1);
@@ -42,7 +42,7 @@ namespace TerraformingMod
                     {
                         change.Scale(-1);
                     }
-                    TerraformingFuntions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
+                    TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
                 }
             }
         }
@@ -54,11 +54,11 @@ namespace TerraformingMod
         public static void Prefix()
         {
             LightManager.SunPathTraceWorldAtmos = true;
-            TerraformingFuntions.ThisGlobalPrecise = new GlobalAtmospherePrecise(WorldManager.CurrentWorldSetting.DifficultySetting.Name, Mathf.Abs(WorldManager.CurrentWorldSetting.Gravity));
-            TerraformingFuntions.ThisGlobalPrecise.OnLoadMix = TerraformingFuntions.GasMixCopy(AtmosphericsController.GlobalAtmosphere.GasMixture);
-            TerraformingFuntions.ThisGlobalPrecise.solarScale = WorldManager.CurrentWorldSetting.SolarScale;
-            TerraformingFuntions.ThisGlobalPrecise.solarScaleSquare = Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
-            ConsoleWindow.Print("GlobalPrecise generated");
+            TerraformingFunctions.ThisGlobalPrecise = new GlobalAtmospherePrecise(WorldManager.CurrentWorldSetting.DifficultySetting.Name, Mathf.Abs(WorldManager.CurrentWorldSetting.Gravity));
+            TerraformingFunctions.ThisGlobalPrecise.OnLoadMix = TerraformingFunctions.GasMixCopy(AtmosphericsController.GlobalAtmosphere.GasMixture);
+            TerraformingFunctions.ThisGlobalPrecise.solarScale = WorldManager.CurrentWorldSetting.SolarScale;
+            TerraformingFunctions.ThisGlobalPrecise.solarScaleSquare = Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
+            ConsoleWindow.Print("GlobalPrecise generated (Terrafmorning mod loaded successfully)");
         }
     }
     [HarmonyPatch(typeof(XmlSaveLoad), "WriteWorld")]
@@ -70,7 +70,7 @@ namespace TerraformingMod
             
             if (AtmosphericsController.GlobalAtmosphere != null)
             {
-                ____worldSettingData.SpawnContents = TerraformingFuntions.UpdateWorldSetting(AtmosphericsController.GlobalAtmosphere.GasMixture);
+                ____worldSettingData.SpawnContents = TerraformingFunctions.UpdateWorldSetting(AtmosphericsController.GlobalAtmosphere.GasMixture);
                 ConsoleWindow.Print("Exported GlobalPrecise World Settings");
             }
             else
@@ -85,16 +85,16 @@ namespace TerraformingMod
         [HarmonyPrefix]
         public static bool Prefix(Atmosphere __instance)
         {
-            if (__instance.Mode == Atmosphere.AtmosphereMode.Global && TerraformingFuntions.ThisGlobalPrecise != null)
+            if (__instance.Mode == AtmosphereHelper.AtmosphereMode.Global && TerraformingFunctions.ThisGlobalPrecise != null)
             {
-                float temp = TerraformingFuntions.GetTemperature(CursorManager._timeOfDay, __instance.GasMixture) + WorldManager.EventModTemperature;
-                TerraformingFuntions.ThisGlobalPrecise.UpdateGlobalAtmosphere(temp, AtmosphericsController.GlobalAtmosphere);
+                float temp = TerraformingFunctions.GetTemperature(CursorManager._timeOfDay, __instance.GasMixture) + WorldManager.EventModTemperature;
+                TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphere(temp, AtmosphericsController.GlobalAtmosphere);
             }
             return false;
         }
     }
 
-    public class TerraformingFuntions
+    public class TerraformingFunctions
     {
 
         public static GlobalAtmospherePrecise ThisGlobalPrecise;
@@ -116,7 +116,7 @@ namespace TerraformingMod
         }
         public static GasMixture GasMixCopy(GasMixture original)
         {
-            GasMixture result = GasMixture.Create();
+            GasMixture result = new GasMixture();
             result.Set(original);
             return result;
         }
