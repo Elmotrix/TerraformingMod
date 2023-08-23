@@ -140,21 +140,35 @@ namespace TerraformingMod
     public class SimpleGasMixture
     {
         public double Pollutant { get; set; }
+        public double LiquidPollutant { get; set; }
         public double CarbonDioxide { get; set; }
+        public double LiquidCarbonDioxide { get; set; }
         public double Oxygen { get; set; }
+        public double LiquidOxygen { get; set; }
         public double Volatiles { get; set; }
+        public double LiquidVolatiles { get; set; }
         public double Nitrogen { get; set; }
+        public double LiquidNitrogen { get; set; }
         public double NitrousOxide { get; set; }
+        public double LiquidNitrousOxide { get; set; }
         public double Water { get; set; }
+        public double Steam { get; set; }
         public void Scale(double scale)
         {
             Pollutant *= scale;
+            LiquidPollutant *= scale;
             CarbonDioxide *= scale;
+            LiquidCarbonDioxide *= scale;
             Oxygen *= scale;
+            LiquidOxygen *= scale;
             Volatiles *= scale;
+            LiquidVolatiles *= scale;
             Nitrogen *= scale;
+            LiquidNitrogen *= scale;
             NitrousOxide *= scale;
+            LiquidNitrousOxide *= scale;
             Water *= scale;
+            Steam *= scale;
         }
 
         public void SetType(GasType gasType, double quantity)
@@ -184,6 +198,27 @@ namespace TerraformingMod
                 case GasType.NitrousOxide:
                     NitrousOxide = quantity;
                     break;
+                case GasType.LiquidOxygen:
+                    LiquidOxygen = quantity;
+                    break;
+                case GasType.LiquidNitrogen:
+                    LiquidNitrogen = quantity;
+                    break;
+                case GasType.LiquidCarbonDioxide:
+                    LiquidCarbonDioxide = quantity;
+                    break;
+                case GasType.LiquidVolatiles:
+                    LiquidVolatiles = quantity;
+                    break;
+                case GasType.LiquidPollutant:
+                    LiquidPollutant = quantity;
+                    break;
+                case GasType.Steam:
+                    Steam = quantity;
+                    break;
+                case GasType.LiquidNitrousOxide:
+                    LiquidNitrousOxide = quantity;
+                    break;
                 default:
                     break;
             }
@@ -192,10 +227,10 @@ namespace TerraformingMod
     public class GlobalAtmospherePrecise: SimpleGasMixture
     {
         public static GasType[] gasTypes = new GasType[]
-   {GasType.Pollutant, GasType.CarbonDioxide,GasType.Oxygen,GasType.Volatiles, GasType.Nitrogen, GasType.NitrousOxide, GasType.Water };
+   {GasType.Pollutant, GasType.CarbonDioxide,GasType.Oxygen,GasType.Volatiles, GasType.Nitrogen, GasType.NitrousOxide, GasType.Water, GasType.LiquidPollutant, GasType.LiquidCarbonDioxide,GasType.LiquidOxygen,GasType.LiquidVolatiles, GasType.LiquidNitrogen, GasType.LiquidNitrousOxide, GasType.Steam };
         public static double worldSize;
-        public static double[] baseFactors = new double[] { 3.21255958929106, 1.70512498586279, 0.260992760476665, 1.65544673748613, -0.447676800266691, -1.288345881, 0 };
-        public static double[] deltaFactors = new double[] { 1.03068489808625, -0.00586528497786273, 0.0151066403234939, 15.4334358506862, -0.044571485135339, -0.987064019, 0 };
+        public static double[] baseFactors = new double[] { 3.21255958929106, 1.70512498586279, 0.260992760476665, 1.65544673748613, -0.447676800266691, -1.288345881, 0, 3.21255958929106, 1.70512498586279, 0.260992760476665, 1.65544673748613, -0.447676800266691, -1.288345881, 0 };
+        public static double[] deltaFactors = new double[] { 1.03068489808625, -0.00586528497786273, 0.0151066403234939, 15.4334358506862, -0.044571485135339, -0.987064019, 0, 1.03068489808625, -0.00586528497786273, 0.0151066403234939, 15.4334358506862, -0.044571485135339, -0.987064019, 0 };
         public static double baseSolarScale = 269.391273688767;
         public static double deltaSolarScale = 98.8204375153876;
         public static double baseTQ = -0.0222557717480231;
@@ -237,24 +272,38 @@ namespace TerraformingMod
         public void UpdateGlobalAtmosphereChange(SimpleGasMixture change)
         {
             Pollutant += change.Pollutant * worldScale;
+            LiquidPollutant += change.LiquidPollutant * worldScale;
             CarbonDioxide += change.CarbonDioxide * worldScale;
+            LiquidCarbonDioxide += change.LiquidCarbonDioxide * worldScale;
             Oxygen += change.Oxygen * worldScale;
+            LiquidOxygen += change.LiquidOxygen * worldScale;
             Volatiles += change.Volatiles * worldScale;
+            LiquidVolatiles += change.LiquidVolatiles * worldScale;
             Nitrogen += change.Nitrogen * worldScale;
+            LiquidNitrogen += change.LiquidNitrogen * worldScale;
             NitrousOxide += change.NitrousOxide * worldScale;
+            LiquidNitrousOxide += change.LiquidNitrousOxide * worldScale;
             Water += change.Water * worldScale;
+            Steam += change.Steam * worldScale;
         }
         public void UpdateGlobalAtmosphere(float temp, Atmosphere GlobalAtmosphere)
         {
             GlobalAtmosphere.GasMixture.SetReadOnly(false);
             GlobalAtmosphere.GasMixture.Set(OnLoadMix);
             GlobalAtmosphere.GasMixture.Pollutant.Quantity += (float)Pollutant;
+            GlobalAtmosphere.GasMixture.LiquidPollutant.Quantity += (float)LiquidPollutant;
             GlobalAtmosphere.GasMixture.CarbonDioxide.Quantity += (float)CarbonDioxide;
+            GlobalAtmosphere.GasMixture.LiquidCarbonDioxide.Quantity += (float)LiquidCarbonDioxide;
             GlobalAtmosphere.GasMixture.Oxygen.Quantity += (float)Oxygen;
+            GlobalAtmosphere.GasMixture.LiquidOxygen.Quantity += (float)LiquidOxygen;
             GlobalAtmosphere.GasMixture.Volatiles.Quantity += (float)Volatiles;
+            GlobalAtmosphere.GasMixture.LiquidVolatiles.Quantity += (float)LiquidVolatiles;
             GlobalAtmosphere.GasMixture.Nitrogen.Quantity += (float)Nitrogen;
+            GlobalAtmosphere.GasMixture.LiquidNitrogen.Quantity += (float)LiquidNitrogen;
             GlobalAtmosphere.GasMixture.NitrousOxide.Quantity += (float)NitrousOxide;
+            GlobalAtmosphere.GasMixture.LiquidNitrousOxide.Quantity += (float)LiquidNitrousOxide;
             GlobalAtmosphere.GasMixture.Water.Quantity += (float)Water;
+            GlobalAtmosphere.GasMixture.Steam.Quantity += (float)Steam;
             float num = temp * GlobalAtmosphere.GasMixture.HeatCapacity;
             if (!float.IsNaN(temp))
             {
