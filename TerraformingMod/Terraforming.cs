@@ -24,7 +24,7 @@ namespace TerraformingMod
                     return;
                 }
             }
-            __state = new GasMixture();
+            __state = GasMixtureHelper.Invalid;
         }
         [HarmonyPostfix]
         public static void Postfix(Atmosphere __instance, Atmosphere atmosphere, GasMixture __state)
@@ -116,7 +116,7 @@ namespace TerraformingMod
         }
         public static GasMixture GasMixCopy(GasMixture original)
         {
-            GasMixture result = new GasMixture();
+            GasMixture result = GasMixtureHelper.Create();
             result.Set(original);
             return result;
         }
