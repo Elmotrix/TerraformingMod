@@ -10,43 +10,104 @@ using Assets.Scripts.Serialization;
 
 namespace TerraformingMod
 {
-    [HarmonyPatch(typeof(Atmosphere), "GiveAtmospherePortion")]
-    public class AtmosphereGiveAtmospherePortionPatch
+
+    [HarmonyPatch(typeof(Atmosphere), "LerpAtmosphere")]
+    public class AtmosphereLerpAtmospherePatch
     {
         [HarmonyPrefix]
-        public static void Prefix(Atmosphere __instance, Atmosphere atmosphere, out GasMixture __state)
+        public static void Prefix(Atmosphere __instance, Atmosphere targetAtmos, ref GasMixture __state)
         {
-            if (atmosphere.Mode == AtmosphereHelper.AtmosphereMode.World)
+            if (targetAtmos.IsGlobalAtmosphere)
             {
-                if (atmosphere.Room == null || __instance.Room == null)
-                {
-                    __state = TerraformingFunctions.GasMixCopy(atmosphere.GasMixture);
-                    return;
-                }
+                __state = new GasMixture(__instance.GasMixture);
+                return;
             }
+
             __state = GasMixtureHelper.Invalid;
         }
+
         [HarmonyPostfix]
-        public static void Postfix(Atmosphere __instance, Atmosphere atmosphere, GasMixture __state)
+        public static void Postfix(Atmosphere __instance, Atmosphere targetAtmos, GasMixture __state)
         {
-            if (atmosphere.Mode == AtmosphereHelper.AtmosphereMode.World)
+            if (targetAtmos.IsGlobalAtmosphere)
             {
-                if ((atmosphere.Room == null || __instance.Room == null) && TerraformingFunctions.ThisGlobalPrecise != null)
+                var change = TerraformingFunctions.GasMixCompair(__instance.GasMixture, __state);
+                TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Atmosphere), "TakeAtmospherePortion")]
+    public class AtmospherTakeAtmospherePortionPatch
+    {
+        [HarmonyPrefix]
+        public static void Prefix(Atmosphere __instance, Atmosphere atmosphere, ref GasMixture __state, GasMixture ____totalMixInWorldGasMix)
+        {
+            if (atmosphere.IsGlobalAtmosphere)
+            {
+                __state = new GasMixture(____totalMixInWorldGasMix);
+                return;
+            }
+
+            __state = GasMixtureHelper.Invalid;
+        }
+
+        [HarmonyPostfix]
+        public static void Postfix(Atmosphere __instance, Atmosphere atmosphere, GasMixture __state, GasMixture ____totalMixInWorldGasMix)
+        {
+            if (atmosphere.IsGlobalAtmosphere)
+            {
+                var change = TerraformingFunctions.GasMixCompair(____totalMixInWorldGasMix, __state);
+                TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Atmosphere), "GiveAtmospheresMixInWorld")]
+    public class AtmospherGiveAtmospheresMixInWorldPatch
+    {
+        [HarmonyPostfix]
+        public static void Postfix(Atmosphere __instance, object ____mixingAtmos, float ____totalMixInWorldWeight, GasMixture ____totalMixInWorldGasMix)
+        {
+            var atmoList = ____mixingAtmos as System.Collections.IEnumerable;
+            if (atmoList == null)
+                return;
+
+            if (TerraformingFunctions.ThisGlobalPrecise == null)
+                return;
+
+            foreach (var entry in atmoList)
+            {
+                var atmo = Traverse.Create(entry).Field("atmos").GetValue() as Atmosphere;
+                float giveWeight = Traverse.Create(entry).Field("giveWeight").GetValue<float>();
+
+                if (atmo != null && atmo.IsGlobalAtmosphere)
                 {
-                    SimpleGasMixture change = TerraformingFunctions.GasMixCompair(__state, atmosphere.GasMixture, false);
-                    if (atmosphere.Room != null)
-                    {
-                        change.Scale(0.1);
-                    }
-                    else if (__instance.Room != null)
-                    {
-                        change.Scale(-1);
-                    }
+                    float ratio = giveWeight / ____totalMixInWorldWeight;
+                    GasMixture gasMixture = new GasMixture(____totalMixInWorldGasMix);
+                    gasMixture.Scale(ratio);
+
+                    var change = new SimpleGasMixture(gasMixture);
                     TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
                 }
             }
         }
     }
+
+    [HarmonyPatch(typeof(AtmosphericsController), "Deregister")]
+    public class AtmosphericsControllerDeregisterPatch
+    {
+        [HarmonyPrefix]
+        public static void Prefix(Atmosphere atmosphere)
+        {
+            if (atmosphere.Mode == AtmosphereHelper.AtmosphereMode.World && atmosphere.Room == null && atmosphere.IsCloseToGlobal(AtmosphereHelper.GlobalAtmosphereNeighbourThreshold / 6f))
+            {
+                var change = TerraformingFunctions.GasMixCompair(AtmosphericsController.GlobalAtmosphere.GasMixture, atmosphere.GasMixture);
+                TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(WorldManager), "StartWorld")]
     public class WorldManagerStartWorldPatch
     {
@@ -120,17 +181,12 @@ namespace TerraformingMod
             result.Set(original);
             return result;
         }
-        public static SimpleGasMixture GasMixCompair(GasMixture original1, GasMixture original2, bool add)
+        public static SimpleGasMixture GasMixCompair(GasMixture original1, GasMixture original2)
         {
-            double op = -1;
-            if (add)
-            {
-                op = 1;
-            }
             SimpleGasMixture result = new SimpleGasMixture();
             foreach (GasType type in GlobalAtmospherePrecise.gasTypes)
             {
-                double num = (double)original1.GetMoleValue(type).Quantity + (double)original2.GetMoleValue(type).Quantity*op;
+                double num = (double)original2.GetMoleValue(type).Quantity - (double)original1.GetMoleValue(type).Quantity;
                 result.SetType(type, num);
             }
 
