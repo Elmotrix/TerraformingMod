@@ -280,20 +280,23 @@ namespace TerraformingMod
 
         public void UpdateGlobalAtmosphereChange(SimpleGasMixture change)
         {
-            Pollutant += change.Pollutant * worldScale;
-            LiquidPollutant += change.LiquidPollutant * worldScale;
-            CarbonDioxide += change.CarbonDioxide * worldScale;
-            LiquidCarbonDioxide += change.LiquidCarbonDioxide * worldScale;
-            Oxygen += change.Oxygen * worldScale;
-            LiquidOxygen += change.LiquidOxygen * worldScale;
-            Volatiles += change.Volatiles * worldScale;
-            LiquidVolatiles += change.LiquidVolatiles * worldScale;
-            Nitrogen += change.Nitrogen * worldScale;
-            LiquidNitrogen += change.LiquidNitrogen * worldScale;
-            NitrousOxide += change.NitrousOxide * worldScale;
-            LiquidNitrousOxide += change.LiquidNitrousOxide * worldScale;
-            Water += change.Water * worldScale;
-            Steam += change.Steam * worldScale;
+            lock (this)
+            {
+                Pollutant += change.Pollutant * worldScale;
+                LiquidPollutant += change.LiquidPollutant * worldScale;
+                CarbonDioxide += change.CarbonDioxide * worldScale;
+                LiquidCarbonDioxide += change.LiquidCarbonDioxide * worldScale;
+                Oxygen += change.Oxygen * worldScale;
+                LiquidOxygen += change.LiquidOxygen * worldScale;
+                Volatiles += change.Volatiles * worldScale;
+                LiquidVolatiles += change.LiquidVolatiles * worldScale;
+                Nitrogen += change.Nitrogen * worldScale;
+                LiquidNitrogen += change.LiquidNitrogen * worldScale;
+                NitrousOxide += change.NitrousOxide * worldScale;
+                LiquidNitrousOxide += change.LiquidNitrousOxide * worldScale;
+                Water += change.Water * worldScale;
+                Steam += change.Steam * worldScale;
+            }
         }
         public void UpdateGlobalAtmosphere(float temp, Atmosphere GlobalAtmosphere)
         {
