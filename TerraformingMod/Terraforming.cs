@@ -139,6 +139,15 @@ namespace TerraformingMod
     }
     public class SimpleGasMixture
     {
+        public SimpleGasMixture() {}
+        public SimpleGasMixture(GasMixture gasMixture)
+        {
+            foreach (GasType type in GlobalAtmospherePrecise.gasTypes)
+            {
+                SetType(type, gasMixture.GetMoleValue(type).Quantity);
+            }
+        }
+
         public double Pollutant { get; set; }
         public double LiquidPollutant { get; set; }
         public double CarbonDioxide { get; set; }
