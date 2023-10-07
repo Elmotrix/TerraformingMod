@@ -8,6 +8,9 @@ using Assets.Scripts.Objects;
 using Assets.Scripts;
 using Assets.Scripts.Serialization;
 using Assets.Scripts.Networking;
+using System.Reflection.Emit;
+using System.Linq;
+using TerraformingMod.Tools;
 
 namespace TerraformingMod
 {
@@ -123,6 +126,10 @@ namespace TerraformingMod
             TerraformingFunctions.ThisGlobalPrecise.OnLoadMix = TerraformingFunctions.GasMixCopy(AtmosphericsController.GlobalAtmosphere.GasMixture);
             TerraformingFunctions.ThisGlobalPrecise.solarScale = WorldManager.CurrentWorldSetting.SolarScale;
             TerraformingFunctions.ThisGlobalPrecise.solarScaleSquare = Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
+
+            // ensure the global atmosphere is being synced as needed
+            AtmosphericsManager.AllAtmospheres.Add(AtmosphericsController.GlobalAtmosphere);
+
             ConsoleWindow.Print("GlobalPrecise generated (Terraforming mod loaded on server)");
         }
     }
@@ -142,6 +149,100 @@ namespace TerraformingMod
             TerraformingFunctions.ThisGlobalPrecise.solarScale = WorldManager.CurrentWorldSetting.SolarScale;
             TerraformingFunctions.ThisGlobalPrecise.solarScaleSquare = Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
             ConsoleWindow.Print("GlobalPrecise generated (Terraforming mod loaded on client)");
+        }
+    }
+
+    [HarmonyPatch(typeof(AtmosphereHelper), "IsValidForNetworkSend")]
+    public class AtmosphereHelperIsValidForNetworkSendPatch
+    {
+        [HarmonyPrefix]
+        public static bool Prefix(Atmosphere atmos, ref bool __result)
+        {
+            if (atmos.IsGlobalAtmosphere)
+            {
+                // only send the global atmosphere if the gas quantities changed
+                __result = (atmos.GasMixture.GasQuantitiesDirtied() != 0);
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(AtmosphereHelper), "ReadStatic")]
+    public class AtmosphereHelperReadStaticPatch
+    {
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
+        {
+            var codes = instructions.ToList();
+
+            // hash to ensure the function didnt change and we might do bad things
+            if (codes.HashInstructionsHex() != "65d0a25b")
+            {
+                ConsoleWindow.Print($"TerraformingMod: Code change detected ({codes.HashInstructionsHex()}), AtmosphereHelper ReadStatic patch disabled", ConsoleColor.Red);
+                return codes.AsEnumerable();
+            }
+
+            System.Reflection.Emit.Label skipGlobalLabel = il.DefineLabel();
+
+            // the end of the function should look like this, which we're adapting:
+            /*
+                IL_0119: ldloc.3
+                IL_011a: ldarg.0
+                IL_011b: callvirt instance void Assets.Scripts.Atmospherics.Atmosphere::Read(class Assets.Scripts.Networking.RocketBinaryReader)
+                IL_0120: ret
+
+                Local index 2 = Atmosphere Mode
+                Local index 3 = Atmosphere
+            */
+
+            // insert a branch before the call to the Read function
+            int Index = codes.Count - 4;
+            codes[Index].labels.Add(skipGlobalLabel); // store a skip label at the old instruction
+
+            // Add a branch before the reading of the atmosphere, which will set the current GasMix to the atmosphere
+            // this ensures we can detect any changes to the atmosphere properly
+            codes.Insert(Index++, new CodeInstruction(OpCodes.Ldloc, 2)); // load atmosphereMode
+            codes.Insert(Index++, new CodeInstruction(OpCodes.Ldc_I4, 3)); // load Mode=Global
+            codes.Insert(Index++, new CodeInstruction(OpCodes.Bne_Un_S, skipGlobalLabel)); // skip branch if not equal
+
+            codes.Insert(Index++, new CodeInstruction(OpCodes.Ldloc, 3)); // load Atmosphere
+            codes.Insert(Index++, CodeInstruction.Call(typeof(AtmosphereHelperReadStaticPatch), "PrepareReadingGlobalAtmosphere"));
+
+            // jump to last instruction
+            // at the end of the function, take the now updated Atmosphere, and update the GlobalAtmosphere with its values
+            Index = codes.Count - 1;
+            codes.Insert(Index++, new CodeInstruction(OpCodes.Ldloc, 3)); // load Atmosphere
+            codes.Insert(Index++, CodeInstruction.Call(typeof(AtmosphereHelperReadStaticPatch), "ProcessGlobalAtmosphere"));
+
+            return codes.AsEnumerable();
+        }
+
+        public static void PrepareReadingGlobalAtmosphere(Atmosphere atmosphere)
+        {
+            if (atmosphere != null && atmosphere.Mode == AtmosphereHelper.AtmosphereMode.Global)
+            {
+                if (atmosphere.IsNetworkUpdateRequired(64))
+                {
+                    atmosphere.GasMixture.Set(AtmosphericsController.GlobalAtmosphere.GasMixture);
+                }
+            }
+        }
+
+        public static void ProcessGlobalAtmosphere(Atmosphere atmosphere)
+        {
+            if (atmosphere != null && atmosphere.Mode == AtmosphereHelper.AtmosphereMode.Global)
+            {
+                if (atmosphere.IsNetworkUpdateRequired(64))
+                {
+                    // ConsoleWindow.Print("Updating global atmosphere GasMixture");
+                    AtmosphericsController.GlobalAtmosphere.GasMixture.SetReadOnly(false);
+                    AtmosphericsController.GlobalAtmosphere.GasMixture.Set(atmosphere.GasMixture);
+                    AtmosphericsController.GlobalAtmosphere.GasMixture.SetReadOnly(true);
+                    AtmosphericsController.GlobalAtmosphere.GasMixture.UpdateCache();
+                }
+            }
         }
     }
 
