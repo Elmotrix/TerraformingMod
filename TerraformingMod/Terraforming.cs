@@ -115,7 +115,7 @@ namespace TerraformingMod
         public static void Prefix()
         {
             LightManager.SunPathTraceWorldAtmos = true;
-            TerraformingFunctions.ThisGlobalPrecise = new GlobalAtmospherePrecise(WorldManager.CurrentWorldSetting.DifficultySetting.Name, Mathf.Abs(WorldManager.CurrentWorldSetting.Gravity));
+            TerraformingFunctions.ThisGlobalPrecise = new GlobalAtmospherePrecise(Mathf.Abs(WorldManager.CurrentWorldSetting.Gravity));
             TerraformingFunctions.ThisGlobalPrecise.OnLoadMix = TerraformingFunctions.GasMixCopy(AtmosphericsController.GlobalAtmosphere.GasMixture);
             TerraformingFunctions.ThisGlobalPrecise.solarScale = WorldManager.CurrentWorldSetting.SolarScale;
             TerraformingFunctions.ThisGlobalPrecise.solarScaleSquare = Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
@@ -303,18 +303,8 @@ namespace TerraformingMod
         public static double deltaPa = -0.000450687147663802;
         public static double pressureGravityFactor = 180;
 
-        public GlobalAtmospherePrecise(string Difficulty, float gravity)
+        public GlobalAtmospherePrecise(float gravity)
         {
-            switch (Difficulty)
-            {
-                case "Easy":
-                    break;
-                case "Stationeer":
-                    break;
-                case "Normal":
-                default:
-                    break;
-            }
             worldSize = 7 * Math.Pow(10, 6);
             worldScale = 1 / worldSize;
             this.gravity = Mathf.Abs(gravity);
