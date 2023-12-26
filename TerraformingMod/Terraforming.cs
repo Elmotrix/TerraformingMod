@@ -114,7 +114,13 @@ namespace TerraformingMod
         {
             if (!NetworkManager.IsClient && atmosphere != null && atmosphere.Mode == AtmosphereHelper.AtmosphereMode.World && atmosphere.Room == null && atmosphere.IsCloseToGlobal(AtmosphereHelper.GlobalAtmosphereNeighbourThreshold / 6f * AtmosphereHelper.NewAtmosSupressionMultiplier()))
             {
-                var change = TerraformingFunctions.GasMixCompair(TerraformingFunctions.GlobalAtmosphere.GasMixture, atmosphere.GasMixture);
+                // scale the volume up to the size of the global atmosphere, or the values will be off
+                var mixture = GasMixtureHelper.Create();
+                mixture.Add(atmosphere.GasMixture);
+                mixture.Scale(TerraformingFunctions.GlobalAtmosphere.Volume / atmosphere.Volume);
+
+                // check the difference to global and compensate for it
+                var change = TerraformingFunctions.GasMixCompair(TerraformingFunctions.GlobalAtmosphere.GasMixture, mixture);
                 TerraformingFunctions.ThisGlobalPrecise.UpdateGlobalAtmosphereChange(change);
             }
         }
