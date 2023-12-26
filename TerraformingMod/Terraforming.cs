@@ -132,8 +132,6 @@ namespace TerraformingMod
             LightManager.SunPathTraceWorldAtmos = true;
             TerraformingFunctions.ThisGlobalPrecise = new GlobalAtmospherePrecise(Mathf.Abs(WorldSetting.Current.Gravity));
             TerraformingFunctions.ThisGlobalPrecise.OnLoadMix = WorldSetting.Current.GlobalGasMixture;
-            TerraformingFunctions.ThisGlobalPrecise.solarScale = 1; // WorldSetting.Current.Sun.solar WorldManager.CurrentWorldSetting.SolarScale;
-            TerraformingFunctions.ThisGlobalPrecise.solarScaleSquare = 1; // Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
 
             // load saved atmosphere
             if (XmlSaveLoad.Instance.CurrentWorldSave != null)
@@ -176,8 +174,6 @@ namespace TerraformingMod
             LightManager.SunPathTraceWorldAtmos = true;
             TerraformingFunctions.ThisGlobalPrecise = new GlobalAtmospherePrecise(Mathf.Abs(WorldSetting.Current.Gravity));
             TerraformingFunctions.ThisGlobalPrecise.OnLoadMix = WorldSetting.Current.GlobalGasMixture;
-            TerraformingFunctions.ThisGlobalPrecise.solarScale = 1; // WorldManager.CurrentWorldSetting.SolarScale;
-            TerraformingFunctions.ThisGlobalPrecise.solarScaleSquare = 1; // Math.Pow(WorldManager.CurrentWorldSetting.SolarScale, 2);
             ConsoleWindow.Print("GlobalPrecise generated (Terraforming mod loaded on client)");
         }
     }
@@ -350,8 +346,15 @@ namespace TerraformingMod
         }
         public static float GetTemperature(float timeOfDay, GasMixture gasMix)
         {
-            float temperatureBase = ThisGlobalPrecise.GetWorldBaseTemperature(gasMix);
-            float temperatureDelta = ThisGlobalPrecise.GetWorldDeltaTemperature(temperatureBase, gasMix);
+            // calculate solar scale from the earth ratio
+            double solarRatio = OrbitalSimulation.EarthSolarRatio;
+            // the curve to fit these values has been created with a solver to retain similar values for the vanilla planets as the legacy solarScale values
+            // but with the advantage of actually fluctuating with the seasons
+            double fittedSolarScale = 0.3728728 + 1.746147 * solarRatio - 1.711329 * Math.Pow(solarRatio, 2) + 0.650517 * Math.Pow(solarRatio, 3);
+            double squaredSolarScale = Math.Pow(fittedSolarScale, 2);
+
+            float temperatureBase = ThisGlobalPrecise.GetWorldBaseTemperature(squaredSolarScale, gasMix);
+            float temperatureDelta = ThisGlobalPrecise.GetWorldDeltaTemperature(temperatureBase, squaredSolarScale, gasMix);
             float temp = temperatureBase + Mathf.Sin(timeOfDay * 2f * Mathf.PI - Mathf.PI / 4) * temperatureDelta / 2;
             return temp;
         }
@@ -588,10 +591,8 @@ namespace TerraformingMod
             set { _OnLoadMix = value; }
         }
 
-        public float solarScale;
         private float gravity;
         public float rootGravity;
-        public double solarScaleSquare;
         public double worldScale;
 
         private SimpleGasMixture GasMixAccumulater = new SimpleGasMixture();
@@ -653,7 +654,7 @@ namespace TerraformingMod
             GlobalAtmosphere.UpdateCache();
         }
 
-        public float GetWorldBaseTemperature(GasMixture globalMix)
+        public float GetWorldBaseTemperature(double solarScaleSquare, GasMixture globalMix)
         {
             double temperature = 0;
             temperature += baseSolarScale * solarScaleSquare;
@@ -668,7 +669,7 @@ namespace TerraformingMod
 
             return (float)Math.Max(temperature, 0);
         }
-        public float GetWorldDeltaTemperature(float baseTemp, GasMixture globalMix)
+        public float GetWorldDeltaTemperature(float baseTemp, double solarScaleSquare, GasMixture globalMix)
         {
             double temperature = 0;
             temperature += deltaSolarScale * solarScaleSquare;
