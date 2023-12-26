@@ -14,6 +14,7 @@ using Assets.Scripts.GridSystem;
 using Assets.Scripts.Serialization;
 using static Assets.Scripts.Atmospherics.Chemistry;
 using TerraformingMod.Tools;
+using System.Reflection;
 
 namespace TerraformingMod
 {
@@ -164,7 +165,11 @@ namespace TerraformingMod
             else
                 ConsoleWindow.Print("Terraforming: Global Atmosphere is not valid");
 
-            ConsoleWindow.Print("Terraforming: GlobalPrecise generated (Terraforming mod loaded on server)");
+            // update Solar Irradiance now for an accurate value right from here on out
+            var value = typeof(OrbitalSimulation).GetMethod("CalculateSolarIrradiance", BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null).Invoke(OrbitalSimulation.System, null);
+            Traverse.Create(typeof(OrbitalSimulation)).Property("SolarIrradiance").SetValue(value);
+
+            ConsoleWindow.Print($"Terraforming: GlobalPrecise generated (Terraforming mod loaded on server), Solar Scale {TerraformingFunctions.GetSolarScale()}");
         }
     }
 
@@ -350,14 +355,20 @@ namespace TerraformingMod
                 return _global ?? (_global = AtmosphericsController.GlobalAtmosphere(new Grid3(0)));
             }
         }
-        public static float GetTemperature(float timeOfDay, GasMixture gasMix)
+
+        public static double GetSolarScale()
         {
             // calculate solar scale from the earth ratio
             double solarRatio = OrbitalSimulation.EarthSolarRatio;
             // the curve to fit these values has been created with a solver to retain similar values for the vanilla planets as the legacy solarScale values
             // but with the advantage of actually fluctuating with the seasons
             double fittedSolarScale = 0.3728728 + 1.746147 * solarRatio - 1.711329 * Math.Pow(solarRatio, 2) + 0.650517 * Math.Pow(solarRatio, 3);
-            double squaredSolarScale = Math.Pow(fittedSolarScale, 2);
+            return fittedSolarScale;
+        }
+
+        public static float GetTemperature(float timeOfDay, GasMixture gasMix)
+        {
+            double squaredSolarScale = Math.Pow(GetSolarScale(), 2);
 
             float temperatureBase = ThisGlobalPrecise.GetWorldBaseTemperature(squaredSolarScale, gasMix);
             float temperatureDelta = ThisGlobalPrecise.GetWorldDeltaTemperature(temperatureBase, squaredSolarScale, gasMix);
