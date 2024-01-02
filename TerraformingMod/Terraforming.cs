@@ -197,12 +197,29 @@ namespace TerraformingMod
         {
             if (atmos != null && !atmos.BeingDestroyed && !atmos.IsNaN() && atmos == TerraformingFunctions.GlobalAtmosphere)
             {
-                // only send the global atmosphere if the gas quantities changed
-                __result = (atmos.GasMixture.GasQuantitiesDirtied() != 0);
+                // only send the global atmosphere if the gas quantities changed, or a join is in progress
+                __result = (atmos.GasMixture.GasQuantitiesDirtied() != 0) || TerraformingFunctions.JoinInProgress;
                 return false;
             }
 
             return true;
+        }
+    }
+
+
+    [HarmonyPatch(typeof(AtmosphericsManager), "SerialiseOnJoin")]
+    public class AtmosphericsManagerSerialiseOnJoin
+    {
+        [HarmonyPrefix]
+        public static void Prefix()
+        {
+            TerraformingFunctions.JoinInProgress = true;
+        }
+
+        [HarmonyPostfix]
+        public static void Postfix()
+        {
+            TerraformingFunctions.JoinInProgress = false;
         }
     }
 
@@ -347,6 +364,9 @@ namespace TerraformingMod
         public static GlobalAtmospherePrecise ThisGlobalPrecise;
         private static Atmosphere _global = null;
         public const string TerraformingFilename = "terraforming_atmosphere.xml";
+
+        [ThreadStatic]
+        public static bool JoinInProgress = false;
 
         public static Atmosphere GlobalAtmosphere
         {
