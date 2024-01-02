@@ -599,7 +599,7 @@ namespace TerraformingMod
             return 0.0;
         }
     }
-    public class GlobalAtmospherePrecise: SimpleGasMixture
+    public class GlobalAtmospherePrecise : SimpleGasMixture
     {
         public static GasType[] gasTypes = new GasType[]
    {GasType.Pollutant, GasType.CarbonDioxide,GasType.Oxygen,GasType.Volatiles, GasType.Nitrogen, GasType.NitrousOxide, GasType.Water, GasType.LiquidPollutant, GasType.LiquidCarbonDioxide,GasType.LiquidOxygen,GasType.LiquidVolatiles, GasType.LiquidNitrogen, GasType.LiquidNitrousOxide, GasType.Steam };
