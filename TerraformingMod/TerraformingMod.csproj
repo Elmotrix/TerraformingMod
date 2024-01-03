@@ -58,6 +58,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BepInEx.cs" />
+    <Compile Include="Hashing.cs" />
+    <Compile Include="Serializer.cs" />
     <Compile Include="Terraforming.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
