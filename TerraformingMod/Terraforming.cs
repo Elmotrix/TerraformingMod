@@ -15,6 +15,7 @@ using Assets.Scripts.Serialization;
 using static Assets.Scripts.Atmospherics.Chemistry;
 using TerraformingMod.Tools;
 using System.Reflection;
+using Assets.Scripts.UI;
 
 namespace TerraformingMod
 {
@@ -340,6 +341,22 @@ namespace TerraformingMod
                 }
                 ConsoleWindow.Print("Exported Terraforming Atmosphere");
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(XmlSaveLoad), "BackupWorldFiles")]
+    public class WorldManagerBackupWorldSettingDataPatch
+    {
+        [HarmonyPrefix]
+        public static void Prefix(string worldDirectory, bool autoSave, XmlSaveLoad __instance)
+        {
+            //__instance.BackupEachFiles(worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave);
+            var BackupEachFiles = __instance.GetType().GetMethod("BackupEachFiles", BindingFlags.NonPublic | BindingFlags.Instance);
+            BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
+            
+            //XmlSaveLoad.DeleteEachFilesOldAutoSaves(worldDirectory, XmlSaveLoad.WorldFileName);
+            var DeleteEachFilesOldAutoSaves = __instance.GetType().GetMethod("DeleteEachFilesOldAutoSaves", BindingFlags.NonPublic | BindingFlags.Instance);
+            BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
         }
     }
 
