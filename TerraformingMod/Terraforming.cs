@@ -15,7 +15,6 @@ using Assets.Scripts.Serialization;
 using static Assets.Scripts.Atmospherics.Chemistry;
 using TerraformingMod.Tools;
 using System.Reflection;
-using Assets.Scripts.UI;
 
 namespace TerraformingMod
 {
