@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Linq;
@@ -15,6 +15,7 @@ using Assets.Scripts.Serialization;
 using static Assets.Scripts.Atmospherics.Chemistry;
 using TerraformingMod.Tools;
 using System.Reflection;
+using Assets.Scripts.Objects.Items;
 
 namespace TerraformingMod
 {
@@ -455,6 +456,7 @@ namespace TerraformingMod
         public double LiquidNitrousOxide { get; set; }
         public double Water { get; set; }
         public double Steam { get; set; }
+        public double PollutedWater { get; set; }
 
         public void Reset()
         {
@@ -472,6 +474,7 @@ namespace TerraformingMod
             LiquidNitrousOxide = 0;
             Water = 0;
             Steam = 0;
+            PollutedWater = 0;
         }
 
         public void Scale(double scale)
@@ -490,6 +493,7 @@ namespace TerraformingMod
             LiquidNitrousOxide *= scale;
             Water *= scale;
             Steam *= scale;
+            PollutedWater *= scale;
         }
 
         public double Add(SimpleGasMixture gasMix)
@@ -553,6 +557,9 @@ namespace TerraformingMod
                 case GasType.LiquidNitrousOxide:
                     LiquidNitrousOxide = quantity;
                     break;
+                case GasType.PollutedWater:
+                    PollutedWater = quantity;
+                    break;
                 default:
                     break;
             }
@@ -592,6 +599,8 @@ namespace TerraformingMod
                     return Steam;
                 case GasType.LiquidNitrousOxide:
                     return LiquidNitrousOxide;
+                case GasType.PollutedWater:
+                    return PollutedWater;
                 default:
                     break;
             }
@@ -601,11 +610,62 @@ namespace TerraformingMod
     }
     public class GlobalAtmospherePrecise : SimpleGasMixture
     {
+
         public static GasType[] gasTypes = new GasType[]
-   {GasType.Pollutant, GasType.CarbonDioxide,GasType.Oxygen,GasType.Volatiles, GasType.Nitrogen, GasType.NitrousOxide, GasType.Water, GasType.LiquidPollutant, GasType.LiquidCarbonDioxide,GasType.LiquidOxygen,GasType.LiquidVolatiles, GasType.LiquidNitrogen, GasType.LiquidNitrousOxide, GasType.Steam };
+        {
+            GasType.Pollutant, 
+            GasType.CarbonDioxide,
+            GasType.Oxygen,
+            GasType.Volatiles, 
+            GasType.Nitrogen, 
+            GasType.NitrousOxide, 
+            GasType.Water, 
+            GasType.LiquidPollutant, 
+            GasType.LiquidCarbonDioxide,
+            GasType.LiquidOxygen,
+            GasType.LiquidVolatiles, 
+            GasType.LiquidNitrogen, 
+            GasType.LiquidNitrousOxide, 
+            GasType.Steam, 
+            GasType.PollutedWater
+        };
         public static double worldSize;
-        public static double[] baseFactors = new double[] { 3.21255958929106, 1.70512498586279, 0.260992760476665, 1.65544673748613, -0.447676800266691, -1.288345881, 0, 3.21255958929106, 1.70512498586279, 0.260992760476665, 1.65544673748613, -0.447676800266691, -1.288345881, 0 };
-        public static double[] deltaFactors = new double[] { 1.03068489808625, -0.00586528497786273, 0.0151066403234939, 15.4334358506862, -0.044571485135339, -0.987064019, 0, 1.03068489808625, -0.00586528497786273, 0.0151066403234939, 15.4334358506862, -0.044571485135339, -0.987064019, 0 };
+        public static double[] baseFactors = new double[]
+        {
+            3.21255958929106, 
+            1.70512498586279, 
+            0.260992760476665, 
+            1.65544673748613, 
+            -0.447676800266691, 
+            -1.288345881, 
+            0, 
+            3.21255958929106, 
+            1.70512498586279, 
+            0.260992760476665, 
+            1.65544673748613, 
+            -0.447676800266691, 
+            -1.288345881, 
+            0, 
+            0
+        };
+        public static double[] deltaFactors = new double[]
+        {
+            1.03068489808625, 
+            -0.00586528497786273, 
+            0.0151066403234939, 
+            15.4334358506862, 
+            -0.044571485135339, 
+            -0.987064019, 
+            0, 
+            1.03068489808625, 
+            -0.00586528497786273, 
+            0.0151066403234939, 
+            15.4334358506862, 
+            -0.044571485135339, 
+            -0.987064019, 
+            0, 
+            0
+        };
         public static double baseSolarScale = 269.391273688767;
         public static double deltaSolarScale = 98.8204375153876;
         public static double baseTQ = -0.0222557717480231;
@@ -675,6 +735,7 @@ namespace TerraformingMod
                 GlobalAtmosphere.GasMixture.LiquidNitrousOxide.Quantity += (float)LiquidNitrousOxide;
                 GlobalAtmosphere.GasMixture.Water.Quantity += (float)Water;
                 GlobalAtmosphere.GasMixture.Steam.Quantity += (float)Steam;
+                GlobalAtmosphere.GasMixture.PollutedWater.Quantity += (float)PollutedWater;
             }
             float num = temp * GlobalAtmosphere.GasMixture.HeatCapacity;
             if (!float.IsNaN(temp))
