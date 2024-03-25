@@ -143,10 +143,11 @@ namespace TerraformingMod
             // load saved atmosphere
             if (XmlSaveLoad.Instance.CurrentWorldSave != null)
             {
-                var fileName = StationSaveUtils.GetWorldSaveDirectory(XmlSaveLoad.Instance.CurrentWorldSave.Name) + "/" + TerraformingFunctions.TerraformingFilename;
+                var fileName = XmlSaveLoad.Instance.CurrentWorldSave.World.Directory.FullName + "/" + TerraformingFunctions.TerraformingFilenameBuilder(XmlSaveLoad.Instance.CurrentWorldSave);
+                ConsoleWindow.Print("Terraforming: Loading from: " + fileName, ConsoleColor.Yellow);
                 object obj = XmlSerialization.Deserialize(TerraformingFunctions.AtmoSerializer, fileName);
                 if (!(obj is TerraformingAtmosphere terraformingAtmosphere))
-                {
+                {   
                     ConsoleWindow.Print("Terraforming: Failed to load the terraforming_atmosphere.xml: " + fileName, ConsoleColor.Red);
                 }
                 else
@@ -343,6 +344,22 @@ namespace TerraformingMod
         }
     }
 
+    [HarmonyPatch(typeof(XmlSaveLoad), "BackupWorldFiles")]
+    public class WorldManagerBackupWorldSettingDataPatch
+    {
+        [HarmonyPrefix]
+        public static void Prefix(string worldDirectory, bool autoSave, XmlSaveLoad __instance)
+        {
+            //__instance.BackupEachFiles(worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave);
+            var BackupEachFiles = __instance.GetType().GetMethod("BackupEachFiles", BindingFlags.NonPublic | BindingFlags.Instance);
+            BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
+            
+            //XmlSaveLoad.DeleteEachFilesOldAutoSaves(worldDirectory, XmlSaveLoad.WorldFileName);
+            var DeleteEachFilesOldAutoSaves = __instance.GetType().GetMethod("DeleteEachFilesOldAutoSaves", BindingFlags.NonPublic | BindingFlags.Instance);
+            BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
+        }
+    }
+
     [HarmonyPatch(typeof(AtmosphericsController), "UpdateGlobalAtmosphereWorldTemperature")]
     public class AtmosphereUpdateGlobalAtmosphereWorldTemperaturePatch
     {
@@ -363,7 +380,19 @@ namespace TerraformingMod
 
         public static GlobalAtmospherePrecise ThisGlobalPrecise;
         private static Atmosphere _global = null;
+        
         public const string TerraformingFilename = "terraforming_atmosphere.xml";
+        public static string TerraformingFilenameBuilder(StationSaveContainer save) 
+        {
+            if (save.IsBackup)
+            {
+                return "terraforming_atmosphere(" + save.Index.ToString() + ").xml";
+            }
+            else
+            {
+                return "terraforming_atmosphere.xml";
+            }
+        } 
 
         [ThreadStatic]
         public static bool JoinInProgress = false;
