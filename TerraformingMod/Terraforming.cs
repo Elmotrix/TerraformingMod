@@ -413,7 +413,7 @@ namespace TerraformingMod
             // the curve to fit these values has been created with a solver to retain similar values for the vanilla planets as the legacy solarScale values
             // but with the advantage of actually fluctuating with the seasons
             double fittedSolarScale = 0.3728728 + 1.746147 * solarRatio - 1.711329 * Math.Pow(solarRatio, 2) + 0.650517 * Math.Pow(solarRatio, 3);
-            return fittedSolarScale;
+            return Math.Min(fittedSolarScale, 1.1);
         }
 
         public static float GetTemperature(float timeOfDay, GasMixture gasMix)
