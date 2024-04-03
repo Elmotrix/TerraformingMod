@@ -171,7 +171,7 @@ namespace TerraformingMod
             var value = typeof(OrbitalSimulation).GetMethod("CalculateSolarIrradiance", BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null).Invoke(OrbitalSimulation.System, null);
             Traverse.Create(typeof(OrbitalSimulation)).Property("SolarIrradiance").SetValue(value);
 
-            ConsoleWindow.Print($"Terraforming: GlobalPrecise generated (Terraforming mod loaded on server), Solar Scale {TerraformingFunctions.GetSolarScale()}");
+            ConsoleWindow.Print($"Terraforming: GlobalPrecise generated (Terraforming mod loaded on server)");
         }
     }
 
@@ -357,7 +357,7 @@ namespace TerraformingMod
             
             //XmlSaveLoad.DeleteEachFilesOldAutoSaves(worldDirectory, XmlSaveLoad.WorldFileName);
             var DeleteEachFilesOldAutoSaves = __instance.GetType().GetMethod("DeleteEachFilesOldAutoSaves", BindingFlags.NonPublic | BindingFlags.Instance);
-            BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
+            DeleteEachFilesOldAutoSaves.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
         }
     }
 
@@ -406,22 +406,12 @@ namespace TerraformingMod
             }
         }
 
-        public static double GetSolarScale()
-        {
-            // calculate solar scale from the earth ratio
-            double solarRatio = OrbitalSimulation.EarthSolarRatio;
-            // the curve to fit these values has been created with a solver to retain similar values for the vanilla planets as the legacy solarScale values
-            // but with the advantage of actually fluctuating with the seasons
-            double fittedSolarScale = 0.3728728 + 1.746147 * solarRatio - 1.711329 * Math.Pow(solarRatio, 2) + 0.650517 * Math.Pow(solarRatio, 3);
-            return Math.Min(fittedSolarScale, 1.1);
-        }
-
         public static float GetTemperature(float timeOfDay, GasMixture gasMix)
         {
-            double squaredSolarScale = Math.Pow(GetSolarScale(), 2);
+            double rootIrridiance = Math.Sqrt(OrbitalSimulation.SolarIrradiance);
 
-            float temperatureBase = ThisGlobalPrecise.GetWorldBaseTemperature(squaredSolarScale, gasMix);
-            float temperatureDelta = ThisGlobalPrecise.GetWorldDeltaTemperature(temperatureBase, squaredSolarScale, gasMix);
+            float temperatureBase = ThisGlobalPrecise.GetWorldBaseTemperature(rootIrridiance, gasMix);
+            float temperatureDelta = ThisGlobalPrecise.GetWorldDeltaTemperature(temperatureBase, rootIrridiance, gasMix);
             float temp = temperatureBase + Mathf.Sin(timeOfDay * 2f * Mathf.PI - Mathf.PI / 4) * temperatureDelta / 2;
             return temp;
         }
@@ -659,47 +649,13 @@ namespace TerraformingMod
             GasType.PollutedWater
         };
         public static double worldSize;
-        public static double[] baseFactors = new double[]
-        {
-            3.21255958929106, 
-            1.70512498586279, 
-            0.260992760476665, 
-            1.65544673748613, 
-            -0.447676800266691, 
-            -1.288345881, 
-            0, 
-            3.21255958929106, 
-            1.70512498586279, 
-            0.260992760476665, 
-            1.65544673748613, 
-            -0.447676800266691, 
-            -1.288345881, 
-            0, 
-            0
-        };
-        public static double[] deltaFactors = new double[]
-        {
-            1.03068489808625, 
-            -0.00586528497786273, 
-            0.0151066403234939, 
-            15.4334358506862, 
-            -0.044571485135339, 
-            -0.987064019, 
-            0, 
-            1.03068489808625, 
-            -0.00586528497786273, 
-            0.0151066403234939, 
-            15.4334358506862, 
-            -0.044571485135339, 
-            -0.987064019, 
-            0, 
-            0
-        };
-        public static double baseSolarScale = 269.391273688767;
-        public static double deltaSolarScale = 98.8204375153876;
-        public static double baseTQ = -0.0222557717480231;
-        public static double deltaTQ = 0.0210397597758406;
-        public static double deltaPa = -0.000450687147663802;
+        public static double[] baseFactors = new double[] { 10.651413866149, 1.00348304229291, 0.202490458429832, 8.55023708508486, -0.320563285816776, -1.288345881, 0 };
+        public static double[] deltaFactors = new double[] { 1.03921006683661, -0.014557418735896, -0.0250754001733472, 19.5280403386664, 0.314249023692835, -0.987064019, 0 };
+        public static double baseSolarScale = 8.99241762372131;
+        public static double deltaSolarScale = 3.21847718465672;
+        public static double baseTQ = -0.0128394753903387;
+        public static double deltaTQ = 0.0948443729002513;
+        public static double deltaPa = -0.000838897191503017;
         public static double pressureGravityFactorInPa = 180 * 1000f;
 
         public GlobalAtmospherePrecise(float gravity)
@@ -781,10 +737,10 @@ namespace TerraformingMod
             GlobalAtmosphere.UpdateCache();
         }
 
-        public float GetWorldBaseTemperature(double solarScaleSquare, GasMixture globalMix)
+        public float GetWorldBaseTemperature(double rootIrridiance, GasMixture globalMix)
         {
             double temperature = 0;
-            temperature += baseSolarScale * solarScaleSquare;
+            temperature += baseSolarScale * rootIrridiance;
             for (int i = 0; i < gasTypes.Length; i++)
             {
                 if (baseFactors[i] != 0)
@@ -796,10 +752,10 @@ namespace TerraformingMod
 
             return (float)Math.Max(temperature, 0);
         }
-        public float GetWorldDeltaTemperature(float baseTemp, double solarScaleSquare, GasMixture globalMix)
+        public float GetWorldDeltaTemperature(float baseTemp, double rootIrridiance, GasMixture globalMix)
         {
             double temperature = 0;
-            temperature += deltaSolarScale * solarScaleSquare;
+            temperature += deltaSolarScale * rootIrridiance;
             for (int i = 0; i < gasTypes.Length; i++)
             {
                 if (deltaFactors[i] != 0)
