@@ -352,12 +352,12 @@ namespace TerraformingMod
         public static void Prefix(string worldDirectory, bool autoSave, XmlSaveLoad __instance)
         {
             //__instance.BackupEachFiles(worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave);
-            var BackupEachFiles = __instance.GetType().GetMethod("BackupEachFiles", BindingFlags.NonPublic | BindingFlags.Instance);
+            var BackupEachFiles = typeof(XmlSaveLoad).GetMethod("BackupEachFiles", BindingFlags.NonPublic | BindingFlags.Instance);
             BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
             
             //XmlSaveLoad.DeleteEachFilesOldAutoSaves(worldDirectory, XmlSaveLoad.WorldFileName);
-            var DeleteEachFilesOldAutoSaves = __instance.GetType().GetMethod("DeleteEachFilesOldAutoSaves", BindingFlags.NonPublic | BindingFlags.Instance);
-            DeleteEachFilesOldAutoSaves.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
+            var DeleteEachFilesOldAutoSaves = typeof(XmlSaveLoad).GetMethod("DeleteEachFilesOldAutoSaves", BindingFlags.NonPublic | BindingFlags.Static);
+            DeleteEachFilesOldAutoSaves.Invoke(null, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename});
         }
     }
 
