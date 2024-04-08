@@ -720,7 +720,7 @@ namespace TerraformingMod
             {
                 // add to accumulator, and only update the global atmosphere if there is a significant change
                 GasMixAccumulatorMoles += GasMixAccumulater.Add(change);
-                if (GasMixAccumulatorMoles <= 1)
+                if (Math.Abs(GasMixAccumulatorMoles) <= 1)
                     return;
 
                 // re-scale for world scale
