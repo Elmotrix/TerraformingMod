@@ -144,11 +144,12 @@ namespace TerraformingMod
             // load saved atmosphere
             if (XmlSaveLoad.Instance.CurrentWorldSave != null)
             {
-                var fileName = XmlSaveLoad.Instance.CurrentWorldSave.World.Directory.FullName + "/" + TerraformingFunctions.TerraformingFilenameBuilder(XmlSaveLoad.Instance.CurrentWorldSave);
+                var fileName = TerraformingSaveFile.GetCurrentSaveFileName();
+
                 ConsoleWindow.Print("Terraforming: Loading from: " + fileName, ConsoleColor.Yellow);
                 object obj = XmlSerialization.Deserialize(TerraformingFunctions.AtmoSerializer, fileName);
                 if (!(obj is TerraformingAtmosphere terraformingAtmosphere))
-                {   
+                {
                     ConsoleWindow.Print("Terraforming: Failed to load the terraforming_atmosphere.xml: " + fileName, ConsoleColor.Red);
                 }
                 else
@@ -309,55 +310,61 @@ namespace TerraformingMod
     [HarmonyPatch(typeof(XmlSaveLoad), "WriteWorld")]
     public class WorldManagerExportWorldSettingDataPatch
     {
-        [HarmonyPostfix]
-        public static void Postfix(string worldDirectory)
+        [HarmonyPrefix]
+        public static void Prefix(out uint __state)
         {
-            
+            //collect the backup index before its been incremented
+            __state = TerraformingSaveFile.GetBackupIndex();
+        }
+
+        [HarmonyPostfix]
+        public static void Postfix(ref string worldDirectory, bool doBackup, bool autoSave, uint __state)
+        {
             if (TerraformingFunctions.ThisGlobalPrecise != null)
             {
-                var fileName = worldDirectory + "/temp_" + TerraformingFunctions.TerraformingFilename;
-                fileName = fileName.Replace("\\", "/");
+                var tempFileName = TerraformingSaveFile.GetFullTempFileName(worldDirectory);
 
                 // write out the global atmosphere
                 var saveAtmosphere = new TerraformingAtmosphere();
                 saveAtmosphere.GasMix = new GasMixSaveData(TerraformingFunctions.GlobalAtmosphere.GasMixture);
-                if (!XmlSerialization.Serialization(TerraformingFunctions.AtmoSerializer, saveAtmosphere, fileName))
+                if (!XmlSerialization.Serialization(TerraformingFunctions.AtmoSerializer, saveAtmosphere, tempFileName))
                 {
-                    ConsoleWindow.Print("Error Saving Terraforming Atmosphere: " + fileName, ConsoleColor.Red);
+                    ConsoleWindow.Print("Error Saving Terraforming Atmosphere: " + tempFileName, ConsoleColor.Red);
                     return;
                 }
                 // move file into the right place
+                var realFileName = TerraformingSaveFile.GetFullSaveFileName(worldDirectory);
                 try
                 {
-                    if (File.Exists(worldDirectory + "/" + TerraformingFunctions.TerraformingFilename))
+                    if (File.Exists(realFileName))
                     {
-                        File.Delete(worldDirectory + "/" + TerraformingFunctions.TerraformingFilename);
+                        File.Delete(realFileName);
                     }
-                    File.Move(worldDirectory + "/temp_" + TerraformingFunctions.TerraformingFilename, worldDirectory + "/" + TerraformingFunctions.TerraformingFilename);
+                    File.Move(tempFileName, realFileName);
                 }
                 catch (Exception ex)
                 {
                     ConsoleWindow.Print("Error Renaming Temporary Save Files: " + ex.Message, ConsoleColor.Red);
                     return;
                 }
+
+                if (doBackup)
+                {
+                    var backupFileName = TerraformingSaveFile.GetFullBackupFileName(worldDirectory, __state, autoSave);
+                    try
+                    {
+                        File.Copy(realFileName, backupFileName);
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleWindow.Print("Error creating Backup File: " + ex.Message, ConsoleColor.Red);
+                        return;
+                    }
+
+                    TerraformingSaveFile.DeleteOldBackupFiles(worldDirectory);
+                }
                 ConsoleWindow.Print("Exported Terraforming Atmosphere");
             }
-        }
-    }
-
-    [HarmonyPatch(typeof(XmlSaveLoad), "BackupWorldFiles")]
-    public class WorldManagerBackupWorldSettingDataPatch
-    {
-        [HarmonyPrefix]
-        public static void Prefix(string worldDirectory, bool autoSave, XmlSaveLoad __instance)
-        {
-            //__instance.BackupEachFiles(worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave);
-            var BackupEachFiles = typeof(XmlSaveLoad).GetMethod("BackupEachFiles", BindingFlags.NonPublic | BindingFlags.Instance);
-            BackupEachFiles.Invoke(__instance, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename, autoSave});
-            
-            //XmlSaveLoad.DeleteEachFilesOldAutoSaves(worldDirectory, XmlSaveLoad.WorldFileName);
-            var DeleteEachFilesOldAutoSaves = typeof(XmlSaveLoad).GetMethod("DeleteEachFilesOldAutoSaves", BindingFlags.NonPublic | BindingFlags.Static);
-            DeleteEachFilesOldAutoSaves.Invoke(null, new object[] {worldDirectory, TerraformingFunctions.TerraformingFilename});
         }
     }
 
@@ -381,19 +388,6 @@ namespace TerraformingMod
 
         public static GlobalAtmospherePrecise ThisGlobalPrecise;
         private static Atmosphere _global = null;
-        
-        public const string TerraformingFilename = "terraforming_atmosphere.xml";
-        public static string TerraformingFilenameBuilder(StationSaveContainer save) 
-        {
-            if (save.IsBackup)
-            {
-                return "terraforming_atmosphere(" + save.Index.ToString() + ").xml";
-            }
-            else
-            {
-                return "terraforming_atmosphere.xml";
-            }
-        } 
 
         [ThreadStatic]
         public static bool JoinInProgress = false;
