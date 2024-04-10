@@ -387,7 +387,7 @@ namespace TerraformingMod
     {
 
         public static GlobalAtmospherePrecise ThisGlobalPrecise;
-        private static Atmosphere _global = null;
+        internal static Atmosphere _global = null;
 
         [ThreadStatic]
         public static bool JoinInProgress = false;
@@ -763,6 +763,8 @@ namespace TerraformingMod
             }
             GlobalAtmosphere.GasMixture.SetReadOnly(true);
             GlobalAtmosphere.UpdateCache();
+            //Update global atmosphere for saves
+            TerraformingFunctions._global = GlobalAtmosphere;
         }
 
         public float GetWorldBaseTemperature(double rootIrridiance, GasMixture globalMix)
