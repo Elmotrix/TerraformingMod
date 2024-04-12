@@ -162,6 +162,7 @@ namespace TerraformingMod
             }
 
             // ensure the global atmosphere is being synced as needed
+            TerraformingFunctions.ReloadGlobalAtmosphere();
             var globalAtmo = TerraformingFunctions.GlobalAtmosphere;
             if (globalAtmo != null)
                 AtmosphericsManager.AllAtmospheres.Add(globalAtmo);
@@ -387,17 +388,15 @@ namespace TerraformingMod
     {
 
         public static GlobalAtmospherePrecise ThisGlobalPrecise;
-        internal static Atmosphere _global = null;
 
         [ThreadStatic]
         public static bool JoinInProgress = false;
 
-        public static Atmosphere GlobalAtmosphere
+        public static Atmosphere GlobalAtmosphere;
+
+        public static void ReloadGlobalAtmosphere()
         {
-            get
-            {
-                return _global ?? (_global = AtmosphericsController.GlobalAtmosphere(new Grid3(0)));
-            }
+            GlobalAtmosphere = AtmosphericsController.GlobalAtmosphere(new Grid3(0));
         }
 
         public static float GetTemperature(float timeOfDay, GasMixture gasMix)
@@ -763,8 +762,6 @@ namespace TerraformingMod
             }
             GlobalAtmosphere.GasMixture.SetReadOnly(true);
             GlobalAtmosphere.UpdateCache();
-            //Update global atmosphere for saves
-            TerraformingFunctions._global = GlobalAtmosphere;
         }
 
         public float GetWorldBaseTemperature(double rootIrridiance, GasMixture globalMix)
