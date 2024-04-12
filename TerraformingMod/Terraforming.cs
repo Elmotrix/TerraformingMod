@@ -189,6 +189,7 @@ namespace TerraformingMod
             LightManager.SunPathTraceWorldAtmos = true;
             TerraformingFunctions.ThisGlobalPrecise = new GlobalAtmospherePrecise(Mathf.Abs(WorldSetting.Current.Gravity));
             TerraformingFunctions.ThisGlobalPrecise.OnLoadMix = WorldSetting.Current.GlobalGasMixture;
+            TerraformingFunctions.ReloadGlobalAtmosphere();
             ConsoleWindow.Print("GlobalPrecise generated (Terraforming mod loaded on client)");
         }
     }
