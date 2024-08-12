@@ -14,7 +14,7 @@ namespace TerraformingMod
     {
         public const string pluginGuid = "net.elmo.stationeers.Terraforming";
         public const string pluginName = "Terraforming Mod";
-        public const string pluginVersion = "0.22";
+        public const string pluginVersion = "0.23";
         public static void Log(string line)
         {
             Debug.Log("[" + pluginName + "]: " + line);
